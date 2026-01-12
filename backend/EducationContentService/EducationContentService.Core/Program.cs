@@ -1,8 +1,11 @@
+using EducationContentService.Core.EndpointsSettings;
 using Microsoft.OpenApi;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+
+builder.Services.AddEndpoints(typeof(Program).Assembly);
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -18,8 +21,7 @@ WebApplication app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
-
-app.MapGet("/test", () => "Welcome to the Education Content Service API!");
+RouteGroupBuilder apiGroup = app.MapGroup("/api/lessons");
+app.UseEdnpoints(apiGroup);
 
 app.Run();

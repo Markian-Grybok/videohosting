@@ -6,7 +6,7 @@ public sealed class CreateEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("api/lessons", async (CreateHandle handler) =>
+        app.MapPost("/create", async (CreateHandle handler) =>
         {
             await handler.Handle();
         });
