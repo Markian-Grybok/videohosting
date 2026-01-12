@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Project Path="EducationContentService.Core/EducationContentService.Core.csproj" />
+  <Project Path="EducationContentService.Domain/EducationContentService.Domain.csproj" />
+  <Project Path="EducationContentService.Infrastructure.Postgres/EducationContentService.Infrastructure.Postgres.csproj" />
+</Solution>

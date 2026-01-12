@@ -1,0 +1,54 @@
+## --- Visual Studio & IDEs ---
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+# Visual Studio 2022+ New Solution format artifacts
+.vsidx/
+FileContentIndex/
+
+## --- Build results ---
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## --- .NET & Tools ---
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.binlog
+CodeCoverage/
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+## --- Secrets & User-specific ---
+# Don't push your secrets or connection strings!
+appsettings.Development.json
+secrets.json
+.env
+
+## --- NuGet ---
+*.nupkg
+*.snupkg
+# No need to ignore 'packages/' if you use NuGet 4.0+ (PackageReference)
+# but safe to keep for older projects
+packages/
+
+## --- OS & Temp files ---
+.DS_Store
+Thumbs.db
+~$*
+*~

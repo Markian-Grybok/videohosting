@@ -1,0 +1,6 @@
+@EducationContentService.Core_HostAddress = http://localhost:5071
+
+GET {{EducationContentService.Core_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
