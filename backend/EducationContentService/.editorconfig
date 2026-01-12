@@ -307,6 +307,8 @@ dotnet_diagnostic.CA2225.severity = none
 dotnet_diagnostic.CA2326.severity = none
 # CA2327: Do not use insecure JsonSerializerSettings
 dotnet_diagnostic.CA2327.severity = none
+# CA1515: Consider making public types internal
+dotnet_diagnostic.CA1515.severity = none
 
 # Visual Studio.Analyzers
 
