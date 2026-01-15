@@ -1,4 +1,5 @@
 ﻿using EducationContentService.Core.EndpointsSettings;
+using EducationContentService.Core.Features.Lessons;
 using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Exceptions;
@@ -9,6 +10,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddCoreConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddScoped<CreateHandle>();
+
         return services
             .AddSeriLogging(configuration)
             .AddOpenApiSpec()

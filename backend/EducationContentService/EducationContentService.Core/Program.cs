@@ -1,6 +1,5 @@
 using System.Globalization;
 using EducationContentService.Core.Configuration;
-using EducationContentService.Core.EndpointsSettings;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -18,11 +17,7 @@ try
 
     WebApplication app = builder.Build();
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
-
-    RouteGroupBuilder apiGroup = app.MapGroup("/api/lessons");
-    app.UseEdnpoints(apiGroup);
+    app.UseCoreConfiguration();
 
     app.Run();
 }
