@@ -1,27 +1,36 @@
+using System.Globalization;
+using EducationContentService.Core.Configuration;
 using EducationContentService.Core.EndpointsSettings;
-using Microsoft.OpenApi;
+using Serilog;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+    .CreateBootstrapLogger();
 
-builder.Services.AddOpenApi();
-
-builder.Services.AddEndpoints(typeof(Program).Assembly);
-
-builder.Services.AddSwaggerGen(options =>
+try
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Education Content Service API",
-        Version = "v1",
-    });
-});
+    Log.Information("Starting Education Content Service Core");
 
-WebApplication app = builder.Build();
+    WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-app.UseSwagger();
-app.UseSwaggerUI();
+    builder.Services.AddCoreConfiguration(builder.Configuration);
 
-RouteGroupBuilder apiGroup = app.MapGroup("/api/lessons");
-app.UseEdnpoints(apiGroup);
+    WebApplication app = builder.Build();
 
-app.Run();
+    app.UseSwagger();
+    app.UseSwaggerUI();
+
+    RouteGroupBuilder apiGroup = app.MapGroup("/api/lessons");
+    app.UseEdnpoints(apiGroup);
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
