@@ -4,6 +4,9 @@
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
   </Folder>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
   <Project Path="EducationContentService.Core/EducationContentService.Core.csproj" />
   <Project Path="EducationContentService.Domain/EducationContentService.Domain.csproj" />
   <Project Path="EducationContentService.Infrastructure.Postgres/EducationContentService.Infrastructure.Postgres.csproj" />

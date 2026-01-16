@@ -1,0 +1,6 @@
+services:
+  educationcontentservice.core:
+    image: ${DOCKER_REGISTRY-}educationcontentservicecore
+    build:
+      context: .
+      dockerfile: EducationContentService.Core/Dockerfile
