@@ -272,6 +272,14 @@ dotnet_diagnostic.SA1649.severity = none
 dotnet_diagnostic.SA1200.severity = none
 # SA1516: Elements should be separated by blank line
 dotnet_diagnostic.SA1516.severity = none
+# SA1119: Statement should not use unnecessary parenthesis
+dotnet_diagnostic.SA1119.severity = none
+# SA1202: Elements should be ordered by access
+dotnet_diagnostic.SA1202.severity = none
+# SA1201: Elements should appear in the correct order
+dotnet_diagnostic.SA1201.severity = none
+# SA1310: Field names should not contain underscore
+dotnet_diagnostic.SA1310.severity = none
 
 # NET.CodeAnalyzers
 
@@ -309,6 +317,10 @@ dotnet_diagnostic.CA2326.severity = none
 dotnet_diagnostic.CA2327.severity = none
 # CA1515: Consider making public types internal
 dotnet_diagnostic.CA1515.severity = none
+# CA1307: Specify StringComparison for clarity
+dotnet_diagnostic.CA1307.severity = none
+# CA1707: Identifiers should not contain underscores
+dotnet_diagnostic.CA1707.severity = none
 
 # Visual Studio.Analyzers
 
