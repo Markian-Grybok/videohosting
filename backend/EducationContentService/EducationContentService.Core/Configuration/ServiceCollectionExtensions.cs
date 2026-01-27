@@ -1,5 +1,6 @@
 ﻿using EducationContentService.Core.EndpointsSettings;
 using EducationContentService.Core.Features.Lessons;
+using EducationContentService.Infrastructure.Postgres;
 using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Exceptions;
@@ -10,6 +11,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddCoreConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddPostgresConfiguration(configuration);
+
         services.AddScoped<CreateHandle>();
 
         return services

@@ -26,4 +26,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\EducationContentService.Infrastructure.Postgres\EducationContentService.Infrastructure.Postgres.csproj" />
+  </ItemGroup>
+
 </Project>
