@@ -13,6 +13,8 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Directory.Packages.props", "."]
 COPY ["Directory.Build.props", "."]
+COPY ["EducationContentService.Domain/EducationContentService.Domain.csproj", "EducationContentService.Domain/"]
+COPY ["EducationContentService.Infrastructure.Postgres/EducationContentService.Infrastructure.Postgres.csproj", "EducationContentService.Infrastructure.Postgres/"]
 COPY ["EducationContentService.Core/EducationContentService.Core.csproj", "EducationContentService.Core/"]
 RUN dotnet restore "./EducationContentService.Core/EducationContentService.Core.csproj"
 COPY . .

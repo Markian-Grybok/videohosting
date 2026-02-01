@@ -5,7 +5,7 @@ namespace EducationContentService.Infrastructure.Postgres;
 
 public class EducationDbContext : DbContext
 {
-    public DbSet<Lesson> Lessons { get; set; }
+    public DbSet<Lesson> Lessons { get; set; } = null!;
 
     public EducationDbContext(DbContextOptions<EducationDbContext> options)
         : base(options)
