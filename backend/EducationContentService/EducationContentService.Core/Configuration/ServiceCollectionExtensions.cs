@@ -1,6 +1,8 @@
 ﻿using EducationContentService.Core.EndpointsSettings;
 using EducationContentService.Core.Features.Lessons;
+using EducationContentService.Domain.Interfaces;
 using EducationContentService.Infrastructure.Postgres;
+using EducationContentService.Infrastructure.Postgres.Repositories;
 using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Exceptions;
@@ -14,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddPostgresConfiguration(configuration);
 
         services.AddScoped<CreateHandle>();
+        services.AddScoped<ILessonRepository, LessonRepository>();
 
         return services
             .AddSeriLogging(configuration)
