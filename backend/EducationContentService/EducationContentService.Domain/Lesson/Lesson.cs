@@ -23,9 +23,9 @@ public class Lesson : Entity<LessonId>
         DeletedAt = null;
     }
 
-    public static Lesson Create(LessonId id, Title title, Description description)
+    public static Lesson Create(Title title, Description description)
     {
-        return new Lesson(id, title, description);
+        return new Lesson(LessonId.NewId(), title, description);
     }
 
     public void Update(Title title, Description description)

@@ -15,7 +15,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddPostgresConfiguration(configuration);
 
-        services.AddScoped<CreateHandle>();
+        services.AddScoped<CreateHanlder>();
+        services.AddScoped<DeleteHandler>();
         services.AddScoped<ILessonRepository, LessonRepository>();
 
         return services
