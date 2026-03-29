@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Backend/" />
+  <Folder Name="/Backend/Services/" />
+  <Folder Name="/Backend/Services/ContentService/">
+    <Project Path="Backend/Services/ContentService/ContentService.API/ContentService.API.csproj" />
+    <Project Path="Backend/Services/ContentService/ContentService.Application/ContentService.Application.csproj" />
+    <Project Path="Backend/Services/ContentService/ContentService.Domain/ContentService.Domain.csproj" />
+    <Project Path="Backend/Services/ContentService/ContentService.Infrastructure/ContentService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Backend/Services/FileService/">
+    <Project Path="Backend/Services/FileService/FileService.API/FileService.API.csproj" />
+    <Project Path="Backend/Services/FileService/FileService.Application/FileService.Application.csproj" />
+    <Project Path="Backend/Services/FileService/FileService.Domain/FileService.Domain.csproj" />
+    <Project Path="Backend/Services/FileService/FileService.Infrastructure/FileService.Infrastructure.csproj" />
+  </Folder>
+</Solution>
