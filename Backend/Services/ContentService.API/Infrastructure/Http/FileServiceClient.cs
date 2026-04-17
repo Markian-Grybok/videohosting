@@ -17,7 +17,7 @@ public class FileServiceClient : IFileServiceClient
     {
         try
         {
-            var response = await _httpClient.GetAsync($"/api/files/{fileId}/status", ct);
+            var response = await _httpClient.GetAsync($"/api/files/{fileId}/processing-status", ct);
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<FileStatusResponse>(cancellationToken: ct);

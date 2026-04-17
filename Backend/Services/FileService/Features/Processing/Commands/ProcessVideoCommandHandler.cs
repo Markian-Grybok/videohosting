@@ -49,6 +49,7 @@ namespace FileService.Features.Processing.Commands
             try
             {
                 video.Status = VideoFileStatus.Processing;
+                video.Progress = 0;
                 await _dbContext.SaveChangesAsync(ct);
                 await NotifyHub(fileId, "Processing", 5);
 
@@ -57,6 +58,9 @@ namespace FileService.Features.Processing.Commands
                 Directory.CreateDirectory(tempOutputDir);
 
                 await _storageService.DownloadFileAsync(command.StoragePath, tempInput, ct);
+                
+                video.Progress = 20;
+                await _dbContext.SaveChangesAsync(ct);
                 await NotifyHub(fileId, "Processing", 20);
 
                 var ffmpeg = _ffmpegOptions.Value.BinaryPath;
@@ -75,12 +79,19 @@ namespace FileService.Features.Processing.Commands
                 if (proc.ExitCode != 0)
                     throw new ProcessingException($"FFmpeg failed: {stderr}");
 
+                video.Progress = 60;
+                await _dbContext.SaveChangesAsync(ct);
                 await NotifyHub(fileId, "Processing", 60);
+
                 var hlsPrefix = $"hls/{fileId}/";
                 await _storageService.UploadDirectoryAsync(tempOutputDir, hlsPrefix, ct);
+                
+                video.Progress = 90;
+                await _dbContext.SaveChangesAsync(ct);
                 await NotifyHub(fileId, "Processing", 90);
 
                 video.Status = VideoFileStatus.Ready;
+                video.Progress = 100;
                 video.HlsManifestPath = $"{hlsPrefix}index.m3u8";
                 video.ProcessedAt = DateTime.UtcNow;
                 await _dbContext.SaveChangesAsync(ct);
@@ -91,6 +102,7 @@ namespace FileService.Features.Processing.Commands
             catch (Exception ex)
             {
                 video.Status = VideoFileStatus.Failed;
+                video.Progress = 0;
                 video.ErrorMessage = ex.Message;
                 await _dbContext.SaveChangesAsync(ct);
                 await NotifyHub(fileId, "Failed", 0);

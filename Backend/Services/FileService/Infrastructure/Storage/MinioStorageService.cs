@@ -3,6 +3,7 @@ using Minio.DataModel.Args;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using FileService.Common.Exceptions;
+using System.Threading;
 
 namespace FileService.Infrastructure.Storage
 {
@@ -11,61 +12,73 @@ namespace FileService.Infrastructure.Storage
         private readonly IMinioClient _minioClient;
         private readonly MinioOptions _options;
         private readonly ILogger<MinioStorageService> _logger;
+        private volatile bool _bucketInitialized = false;
+        private readonly SemaphoreSlim _bucketInitSemaphore = new(1, 1);
 
         public MinioStorageService(IOptions<MinioOptions> options, ILogger<MinioStorageService> logger)
         {
             _options = options.Value;
             _logger = logger;
-
             _minioClient = new MinioClient()
                 .WithEndpoint(_options.Endpoint)
                 .WithCredentials(_options.AccessKey, _options.SecretKey)
                 .WithSSL(_options.UseSSL)
                 .Build();
+        }
 
-            EnsureBucketExistsAsync().GetAwaiter().GetResult();
+        private async Task EnsureBucketExistsAsync(CancellationToken ct)
+        {
+            if (_bucketInitialized)
+                return;
+
+            await _bucketInitSemaphore.WaitAsync(ct);
+            try
+            {
+                if (_bucketInitialized)
+                    return;
+
+                var beArgs = new BucketExistsArgs().WithBucket(_options.BucketName);
+                bool found = await _minioClient.BucketExistsAsync(beArgs, ct);
+                if (!found)
+                {
+                    var mbArgs = new MakeBucketArgs().WithBucket(_options.BucketName);
+                    await _minioClient.MakeBucketAsync(mbArgs, ct);
+                    _logger.LogInformation("Bucket created: {Bucket}", _options.BucketName);
+                }
+                _bucketInitialized = true;
+            }
+            finally
+            {
+                _bucketInitSemaphore.Release();
+            }
         }
 
         public async Task<string> UploadFileAsync(Stream stream, string objectName, string contentType, CancellationToken ct)
         {
+            await EnsureBucketExistsAsync(ct);
             try
             {
-                // Save stream to temporary file and upload using WithFileName
-                var tempPath = Path.GetTempFileName();
-                try
-                {
-                    using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
-                    {
-                        await stream.CopyToAsync(fileStream, ct);
-                    }
+                var putObjectArgs = new PutObjectArgs()
+                    .WithBucket(_options.BucketName)
+                    .WithObject(objectName)
+                    .WithStreamData(stream)
+                    .WithObjectSize(stream.Length)
+                    .WithContentType(contentType);
 
-                    var putObjectArgs = new PutObjectArgs()
-                        .WithBucket(_options.BucketName)
-                        .WithObject(objectName)
-                        .WithFileName(tempPath)
-                        .WithContentType(contentType);
-
-                    await _minioClient.PutObjectAsync(putObjectArgs, ct);
-                    _logger.LogInformation($"File uploaded successfully: {objectName}");
-                    return objectName;
-                }
-                finally
-                {
-                    if (File.Exists(tempPath))
-                    {
-                        File.Delete(tempPath);
-                    }
-                }
+                await _minioClient.PutObjectAsync(putObjectArgs, ct);
+                _logger.LogInformation("File uploaded successfully: {ObjectName}", objectName);
+                return objectName;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error uploading file: {objectName}");
+                _logger.LogError(ex, "Error uploading file: {ObjectName}", objectName);
                 throw new StorageException($"Failed to upload file: {objectName}", ex);
             }
         }
 
         public async Task DownloadFileAsync(string objectName, string destinationPath, CancellationToken ct)
         {
+            await EnsureBucketExistsAsync(ct);
             try
             {
                 var directory = Path.GetDirectoryName(destinationPath);
@@ -87,17 +100,18 @@ namespace FileService.Infrastructure.Storage
                     await _minioClient.GetObjectAsync(getObjectArgs, ct);
                 }
 
-                _logger.LogInformation($"File downloaded successfully: {objectName}");
+                _logger.LogInformation("File downloaded successfully: {ObjectName}", objectName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error downloading file: {objectName}");
+                _logger.LogError(ex, "Error downloading file: {ObjectName}", objectName);
                 throw new StorageException($"Failed to download file: {objectName}", ex);
             }
         }
 
         public async Task UploadDirectoryAsync(string localDirectory, string storagePrefix, CancellationToken ct)
         {
+            await EnsureBucketExistsAsync(ct);
             try
             {
                 if (!Directory.Exists(localDirectory))
@@ -121,7 +135,7 @@ namespace FileService.Infrastructure.Storage
                     }
                 }
 
-                _logger.LogInformation($"Directory uploaded successfully: {localDirectory}");
+                _logger.LogInformation("Directory uploaded successfully: {LocalDirectory}", localDirectory);
             }
             catch (StorageException)
             {
@@ -129,13 +143,14 @@ namespace FileService.Infrastructure.Storage
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error uploading directory: {localDirectory}");
+                _logger.LogError(ex, "Error uploading directory: {LocalDirectory}", localDirectory);
                 throw new StorageException($"Failed to upload directory: {localDirectory}", ex);
             }
         }
 
         public async Task<string> GetPresignedUrlAsync(string objectName, int expirySeconds, CancellationToken ct)
         {
+            await EnsureBucketExistsAsync(ct);
             try
             {
                 var presignedGetObjectArgs = new PresignedGetObjectArgs()
@@ -144,37 +159,13 @@ namespace FileService.Infrastructure.Storage
                     .WithExpiry(expirySeconds);
 
                 var url = await _minioClient.PresignedGetObjectAsync(presignedGetObjectArgs);
-                _logger.LogInformation($"Presigned URL generated for: {objectName}");
+                _logger.LogInformation("Presigned URL generated for: {ObjectName}", objectName);
                 return url;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error generating presigned URL: {objectName}");
+                _logger.LogError(ex, "Error generating presigned URL: {ObjectName}", objectName);
                 throw new StorageException($"Failed to generate presigned URL: {objectName}", ex);
-            }
-        }
-
-        private async Task EnsureBucketExistsAsync()
-        {
-            try
-            {
-                var beArgs = new BucketExistsArgs()
-                    .WithBucket(_options.BucketName);
-
-                bool found = await _minioClient.BucketExistsAsync(beArgs);
-                if (!found)
-                {
-                    var mbArgs = new MakeBucketArgs()
-                        .WithBucket(_options.BucketName);
-
-                    await _minioClient.MakeBucketAsync(mbArgs);
-                    _logger.LogInformation($"Bucket created: {_options.BucketName}");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error ensuring bucket exists: {_options.BucketName}");
-                throw new StorageException($"Failed to ensure bucket exists: {_options.BucketName}", ex);
             }
         }
 

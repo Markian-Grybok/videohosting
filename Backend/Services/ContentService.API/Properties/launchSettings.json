@@ -3,12 +3,12 @@
     "http": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "http://localhost:5001/swagger/index.html",
+      "launchUrl": "http://localhost:5002/swagger/index.html",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "http://localhost:5001"
+      "applicationUrl": "http://localhost:5002"
     },
     "Container (Dockerfile)": {
       "commandName": "Docker",

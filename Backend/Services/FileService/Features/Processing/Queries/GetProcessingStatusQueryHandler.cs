@@ -21,7 +21,7 @@ namespace FileService.Features.Processing.Queries
             return new ProcessingStatusResult(
                 video.Id,
                 video.Status.ToString(),
-                null, // Progress is not tracked in DB
+                video.Progress,
                 video.ErrorMessage
             );
         }
