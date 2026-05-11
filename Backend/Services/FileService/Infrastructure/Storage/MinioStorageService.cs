@@ -1,5 +1,7 @@
 using Minio;
 using Minio.DataModel.Args;
+using Minio.DataModel;
+using Minio.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using FileService.Common.Exceptions;
@@ -166,6 +168,74 @@ namespace FileService.Infrastructure.Storage
             {
                 _logger.LogError(ex, "Error generating presigned URL: {ObjectName}", objectName);
                 throw new StorageException($"Failed to generate presigned URL: {objectName}", ex);
+            }
+        }
+
+        public async Task DeleteFileAsync(string objectName, CancellationToken ct)
+        {
+            await EnsureBucketExistsAsync(ct);
+            try
+            {
+                var args = new RemoveObjectArgs()
+                    .WithBucket(_options.BucketName)
+                    .WithObject(objectName);
+                await _minioClient.RemoveObjectAsync(args, ct);
+                _logger.LogInformation("Deleted object {ObjectName} from bucket {Bucket}", objectName, _options.BucketName);
+            }
+            catch (MinioException ex)
+            {
+                _logger.LogError(ex, "Error deleting object {ObjectName}", objectName);
+                throw new StorageException($"Failed to delete object: {objectName}", ex);
+            }
+        }
+
+        public async Task DeleteDirectoryAsync(string prefix, CancellationToken ct)
+        {
+            await EnsureBucketExistsAsync(ct);
+            try
+            {
+                var objectNames = new List<string>();
+
+                // Новий спосіб в MinIO 7.x - використовуємо асинхронний перебір
+                var listArgs = new ListObjectsArgs()
+                    .WithBucket(_options.BucketName)
+                    .WithPrefix(prefix)
+                    .WithRecursive(true);
+
+                await foreach (var item in _minioClient.ListObjectsEnumAsync(listArgs, ct))
+                {
+                    if (!string.IsNullOrEmpty(item.Key))
+                    {
+                        objectNames.Add(item.Key);
+                    }
+                }
+
+                if (objectNames.Count == 0)
+                {
+                    _logger.LogInformation("No objects to delete for prefix {Prefix}", prefix);
+                    return;
+                }
+
+                // Видалення пачками (по 1000 об'єктів за раз)
+                var batchSize = 1000;
+                for (int i = 0; i < objectNames.Count; i += batchSize)
+                {
+                    var batch = objectNames.Skip(i).Take(batchSize).ToList();
+                    var removeArgs = new RemoveObjectsArgs()
+                        .WithBucket(_options.BucketName)
+                        .WithObjects(batch);
+
+                    var deleteErrors = await _minioClient.RemoveObjectsAsync(removeArgs, ct);
+                    int deleted = batch.Count - (deleteErrors?.Count ?? 0);
+                    _logger.LogDebug("Deleted {Count} objects in batch", deleted);
+                }
+
+                _logger.LogInformation("Deleted {Count} objects with prefix {Prefix}", objectNames.Count, prefix);
+            }
+            catch (MinioException ex)
+            {
+                _logger.LogError(ex, "Error deleting directory with prefix {Prefix}", prefix);
+                throw new StorageException($"Failed to delete directory: {prefix}", ex);
             }
         }
 

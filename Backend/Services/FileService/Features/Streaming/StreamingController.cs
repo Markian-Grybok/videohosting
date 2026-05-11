@@ -57,5 +57,19 @@ namespace FileService.Features.Streaming
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpDelete("{fileId:guid}")]
+        public async Task<IActionResult> DeleteFile(
+            Guid fileId,
+            CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(
+                new FileService.Features.Delete.DeleteVideoCommand(fileId), cancellationToken);
+
+            if (!result.Success)
+                return StatusCode(500, new { error = result.Error });
+
+            return NoContent(); // 204
+        }
     }
 }

@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import UploadPage from "./pages/UploadPage";
 import LessonPage from "./pages/LessonPage";
 import CoursesPage from "./pages/CoursesPage.tsx";
 import CourseDetailPage from "./pages/CourseDetailPage.tsx";
@@ -32,8 +31,6 @@ function App() {
                     {/* Lesson page */}
                     <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonPage />} />
 
-                    {/* Upload page */}
-                    <Route path="/upload" element={<UploadPage />} />
 
                     {/* 404 fallback */}
                     <Route path="*" element={<div>Сторінку не знайдено</div>} />

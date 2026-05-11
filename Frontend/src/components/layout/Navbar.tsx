@@ -20,18 +20,6 @@ const Navbar: React.FC = () => {
         >
           Курси
         </NavLink>
-        <NavLink
-          to="/upload"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-              isActive
-                ? "text-primary-600 border-b-2 border-primary-600"
-                : "text-gray-600 hover:text-primary-600"
-            }`
-          }
-        >
-          Завантажити
-        </NavLink>
       </div>
     </nav>
   );

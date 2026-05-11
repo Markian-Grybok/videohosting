@@ -2,12 +2,12 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Trash2 } from "lucide-react";
 import Card, { CardBody } from "../ui/Card";
-import Badge from "../ui/Badge";
 import type { LessonSummary } from "../../types";
 
 interface LessonCardProps {
   lesson: LessonSummary;
   courseId: string;
+  videoStatus?: string | null;
   onDelete: () => void;
 }
 
@@ -36,7 +36,7 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, courseId, onDelete }) =
             <h3 className="text-sm font-medium text-gray-900 truncate">
               {lesson.title}
             </h3>
-            <Badge status={lesson.hasVideo ? "Ready" : "Pending"} />
+
           </div>
 
           <div className="flex-shrink-0">
