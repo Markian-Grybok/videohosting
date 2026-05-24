@@ -69,3 +69,15 @@ export interface UpdateLessonRequest {
   order: number;
   videoFileId?: string;
 }
+
+export interface QualityOption {
+  label: string; // "Auto", "1080p", "720p", "480p", "360p"
+  value: string; // "auto", "1080p", "720p", "480p", "360p"
+}
+
+export interface PlaybackInfo {
+  fileId: string;
+  url: string;
+  expiresIn: number;
+  availableQualities: string[]; // ["360p", "480p", "720p", "1080p"]
+}

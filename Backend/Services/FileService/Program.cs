@@ -35,6 +35,7 @@ builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("Ra
 builder.Services.Configure<FfmpegOptions>(builder.Configuration.GetSection("Ffmpeg"));
 builder.Services.AddSingleton<IStorageService, MinioStorageService>();
 builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
+builder.Services.AddScoped<VideoProcessor>();
 builder.Services.AddHostedService<RabbitMqConsumer>();
 builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));

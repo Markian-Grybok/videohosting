@@ -41,7 +41,23 @@ const Badge: React.FC<BadgeProps> = ({ status }) => {
     "Помилка": {
       classes: "bg-red-100 text-red-700",
       animate: false
-    }
+    },
+      "Processing 360p": {
+          classes: "bg-blue-100 text-blue-700",
+          animate: true
+      },
+      "Processing 480p": {
+          classes: "bg-blue-100 text-blue-700",
+          animate: true
+      },
+      "Processing 720p": {
+          classes: "bg-blue-100 text-blue-700",
+          animate: true
+      },
+      "Processing 1080p": {
+          classes: "bg-blue-100 text-blue-700",
+          animate: true
+      },
   };
 
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.Pending;

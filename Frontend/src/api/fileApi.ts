@@ -1,5 +1,5 @@
 import client from "./client";
-import type { UploadResult, FileStatus } from "../types";
+import type { UploadResult, FileStatus, PlaybackInfo } from "../types";
 import { AxiosError } from "axios";
 
 export const fileApi = {
@@ -49,6 +49,24 @@ export const fileApi = {
 
     getStatus: async (fileId: string): Promise<FileStatus> => {
         const response = await client.get<FileStatus>(`/api/files/${fileId}/status`);
+        return response.data;
+    },
+
+    // Get master.m3u8 URL (auto quality)
+    getPlaybackUrl: async (fileId: string): Promise<PlaybackInfo> => {
+        const response = await client.get<PlaybackInfo>(`/api/files/${fileId}/play`);
+        return response.data;
+    },
+
+    // Get specific quality URL
+    getQualityUrl: async (fileId: string, quality: string): Promise<PlaybackInfo> => {
+        const response = await client.get<PlaybackInfo>(`/api/files/${fileId}/play/${quality}`);
+        return response.data;
+    },
+
+    // Get available qualities for a file
+    getAvailableQualities: async (fileId: string): Promise<{ fileId: string; qualities: string[] }> => {
+        const response = await client.get<{ fileId: string; qualities: string[] }>(`/api/files/${fileId}/qualities`);
         return response.data;
     },
 };

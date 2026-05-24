@@ -3,5 +3,5 @@ using FileService.Features.Streaming.Dtos;
 
 namespace FileService.Features.Streaming.Queries
 {
-    public record GetPlaybackUrlQuery(Guid FileId, string? Quality = null) : IRequest<PlaybackUrlDto>;
+    public record GetAvailableQualitiesQuery(Guid FileId) : IRequest<AvailableQualitiesDto>;
 }

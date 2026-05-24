@@ -11,5 +11,6 @@ namespace FileService.Common.Entities
         public DateTime? ProcessedAt { get; set; }
         public string? HlsManifestPath { get; set; }
         public string? ErrorMessage { get; set; }
+        public string? AvailableQualities { get; set; }
     }
 }

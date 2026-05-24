@@ -6,6 +6,7 @@ import Layout from "../components/layout/Layout";
 import Card, { CardBody } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import VideoPlayer from "../components/lessons/VideoPlayer";
+import { fileApi } from "../api/fileApi";
 import VideoUploadSection from "../components/lessons/VideoUploadSection";
 import Input, { Textarea } from "../components/ui/Input";
 import { useLesson, useUpdateLesson } from "../hooks/useLessons";
@@ -15,6 +16,7 @@ const LessonPage: React.FC = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [showUpload, setShowUpload] = useState(false);
+    const [availableQualities, setAvailableQualities] = useState<string[]>([]);
 
     // Edit lesson state
     const [editingLesson, setEditingLesson] = useState(false);
@@ -34,6 +36,18 @@ const LessonPage: React.FC = () => {
             setEditDescription(lesson.description);
         }
     }, [lesson]);
+
+    // Fetch available qualities for the lesson video (if any)
+    useEffect(() => {
+        if (!lesson?.videoFileId) {
+            setAvailableQualities([]);
+            return;
+        }
+
+        fileApi.getAvailableQualities(lesson.videoFileId)
+            .then(data => setAvailableQualities(data.qualities || []))
+            .catch(() => setAvailableQualities([]));
+    }, [lesson?.videoFileId]);
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString("uk-UA", {
@@ -150,7 +164,11 @@ const LessonPage: React.FC = () => {
         if (videoStatus === "Ready" && playbackUrl) {
             return (
                 <>
-                    <VideoPlayer src={playbackUrl} />
+                    <VideoPlayer
+                        fileId={lesson.videoFileId!}
+                        initialUrl={playbackUrl}
+                        availableQualities={availableQualities}
+                    />
                     {canDeleteVideo && (
                         <div className="mt-3 flex justify-end">
                             <Button

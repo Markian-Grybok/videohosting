@@ -10,6 +10,7 @@ using FileService.Infrastructure.Storage;
 using FileService.Infrastructure.Persistence;
 using FileService.Common.Exceptions;
 using FileService.Features.Processing.Hubs;
+using FileService.Features.Processing;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
@@ -24,19 +25,22 @@ namespace FileService.Features.Processing.Commands
         private readonly IOptions<FfmpegOptions> _ffmpegOptions;
         private readonly IHubContext<ProcessingHub> _hubContext;
         private readonly ILogger<ProcessVideoCommandHandler> _logger;
+        private readonly VideoProcessor _videoProcessor;
 
         public ProcessVideoCommandHandler(
             FileServiceDbContext dbContext,
             IStorageService storageService,
             IOptions<FfmpegOptions> ffmpegOptions,
             IHubContext<ProcessingHub> hubContext,
-            ILogger<ProcessVideoCommandHandler> logger)
+            ILogger<ProcessVideoCommandHandler> logger,
+            VideoProcessor videoProcessor)
         {
             _dbContext = dbContext;
             _storageService = storageService;
             _ffmpegOptions = ffmpegOptions;
             _hubContext = hubContext;
             _logger = logger;
+            _videoProcessor = videoProcessor;
         }
 
         public async Task<ProcessVideoResult> Handle(ProcessVideoCommand command, CancellationToken ct)
@@ -51,9 +55,9 @@ namespace FileService.Features.Processing.Commands
             try
             {
                 video.Status = VideoFileStatus.Processing;
-                video.Progress = 0;
+                video.Progress = 5;
                 await _dbContext.SaveChangesAsync(ct);
-                await NotifyHub(fileId, "Processing", 0);
+                await NotifyHub(fileId, "Processing", 5);
 
                 tempInput = Path.GetTempFileName();
                 tempOutputDir = Path.Combine(Path.GetTempPath(), fileId.ToString());
@@ -61,81 +65,48 @@ namespace FileService.Features.Processing.Commands
 
                 await _storageService.DownloadFileAsync(command.StoragePath, tempInput, ct);
 
-                video.Progress = 20;
+                video.Progress = 10;
                 await _dbContext.SaveChangesAsync(ct);
-                await NotifyHub(fileId, "Processing", 20);
+                await NotifyHub(fileId, "Processing", 10);
 
-                // Отримуємо тривалість відео
-                var totalDuration = await GetVideoDurationAsync(tempInput, ct);
-
-                var ffmpeg = _ffmpegOptions.Value.BinaryPath;
-                var segmentDuration = _ffmpegOptions.Value.SegmentDuration;
-                var manifestPath = Path.Combine(tempOutputDir, "index.m3u8");
-                var args = $"-i \"{tempInput}\" -codec: copy -start_number 0 -hls_time {segmentDuration} -hls_list_size 0 -f hls \"{manifestPath}\"";
-
-                var psi = new ProcessStartInfo(ffmpeg, args)
-                {
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using var proc = Process.Start(psi);
-
-                // Тільки одне читання stderr з трекінгом прогресу
-                int lastPercent = 20;
-                var regex = new Regex(@"time=(\d{2}):(\d{2}):(\d{2}\.\d{2})");
-                var lastUpdateTime = DateTime.MinValue;
-
-                while (!proc.StandardError.EndOfStream && !ct.IsCancellationRequested)
-                {
-                    var line = await proc.StandardError.ReadLineAsync();
-                    if (line == null) continue;
-
-                    _logger.LogDebug("FFmpeg: {Line}", line);
-
-                    if (totalDuration.HasValue)
+                // Convert to ABR HLS with dynamic progress callback
+                var masterPlaylistRelativePath = await _videoProcessor.ConvertToHlsAsync(
+                    tempInput,
+                    tempOutputDir,
+                    async (progress, qualityName) =>
                     {
-                        var match = regex.Match(line);
-                        if (match.Success)
-                        {
-                            var hours = int.Parse(match.Groups[1].Value);
-                            var minutes = int.Parse(match.Groups[2].Value);
-                            var seconds = double.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
-                            var currentTime = TimeSpan.FromHours(hours) + TimeSpan.FromMinutes(minutes) + TimeSpan.FromSeconds(seconds);
+                        video.Progress = progress;
+                        await _dbContext.SaveChangesAsync(ct);
 
-                            var percentRaw = (currentTime.TotalSeconds / totalDuration.Value.TotalSeconds) * 70; // 20-90 це 70 діапазон
-                            var percentInt = 20 + (int)Math.Round(percentRaw);
-                            percentInt = Math.Clamp(percentInt, 20, 90);
+                        await NotifyHub(
+                            fileId,
+                            $"Processing {qualityName}",
+                            progress
+                        );
+                    },
+                    ct);
+                
+                // Extract selected qualities for storage
+                var qualityDirs = Directory.GetDirectories(tempOutputDir)
+                    .Select(d => Path.GetFileName(d))
+                    .OrderBy(q => q)
+                    .ToList();
+                var selectedQualities = HlsQualities.All
+                    .Where(q => qualityDirs.Contains(q.Name))
+                    .ToList();
 
-                            if (percentInt != lastPercent && (DateTime.UtcNow - lastUpdateTime).TotalMilliseconds > 500)
-                            {
-                                video.Progress = percentInt;
-                                await _dbContext.SaveChangesAsync(ct);
-                                await NotifyHub(fileId, "Processing", percentInt);
-                                lastPercent = percentInt;
-                                lastUpdateTime = DateTime.UtcNow;
-                            }
-                        }
-                    }
-                }
-
-                await proc.WaitForExitAsync(ct);
-
-                if (proc.ExitCode != 0)
-                    throw new ProcessingException($"FFmpeg failed with exit code {proc.ExitCode}");
-
-                video.Progress = 90;
-                await _dbContext.SaveChangesAsync(ct);
-                await NotifyHub(fileId, "Processing", 90);
-
-                var hlsPrefix = $"hls/{fileId}/";
+                var hlsPrefix = $"hls/{fileId}";
                 await _storageService.UploadDirectoryAsync(tempOutputDir, hlsPrefix, ct);
 
                 video.Status = VideoFileStatus.Ready;
-                video.Progress = 100;
-                video.HlsManifestPath = $"{hlsPrefix}index.m3u8";
+                video.Progress = 90;
+                video.HlsManifestPath = $"hls/{fileId}/master.m3u8";
+                video.AvailableQualities = string.Join(",", selectedQualities.Select(q => q.Name));
                 video.ProcessedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync(ct);
+                await NotifyHub(fileId, "Processing", 90);
+
+                video.Progress = 100;
                 await _dbContext.SaveChangesAsync(ct);
                 await NotifyHub(fileId, "Ready", 100);
 
@@ -156,40 +127,6 @@ namespace FileService.Features.Processing.Commands
                 try { if (tempInput != null && File.Exists(tempInput)) File.Delete(tempInput); } catch { }
                 try { if (tempOutputDir != null && Directory.Exists(tempOutputDir)) Directory.Delete(tempOutputDir, true); } catch { }
             }
-        }
-
-        private async Task<TimeSpan?> GetVideoDurationAsync(string filePath, CancellationToken ct)
-        {
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = _ffmpegOptions.Value.BinaryPath,
-                    Arguments = $"-i \"{filePath}\"",
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using var proc = Process.Start(psi);
-                var output = await proc.StandardError.ReadToEndAsync();
-                await proc.WaitForExitAsync(ct);
-
-                var match = Regex.Match(output, @"Duration: (\d{2}):(\d{2}):(\d{2}\.\d{2})");
-                if (match.Success)
-                {
-                    var hours = int.Parse(match.Groups[1].Value);
-                    var minutes = int.Parse(match.Groups[2].Value);
-                    var seconds = double.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
-                    return TimeSpan.FromHours(hours) + TimeSpan.FromMinutes(minutes) + TimeSpan.FromSeconds(seconds);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to get video duration, will use fallback");
-            }
-
-            return null; // fallback
         }
 
         private async Task NotifyHub(Guid fileId, string status, int percent)

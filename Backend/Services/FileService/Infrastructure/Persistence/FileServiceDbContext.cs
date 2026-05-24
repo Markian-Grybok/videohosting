@@ -22,6 +22,7 @@ namespace FileService.Infrastructure.Persistence
                 entity.Property(e => e.OriginalFileName).IsRequired().HasMaxLength(512);
                 entity.Property(e => e.StoragePath).IsRequired().HasMaxLength(512);
                 entity.Property(e => e.HlsManifestPath).HasMaxLength(512);
+                entity.Property(e => e.AvailableQualities).HasMaxLength(512).HasColumnName("available_qualities");
             });
         }
     }

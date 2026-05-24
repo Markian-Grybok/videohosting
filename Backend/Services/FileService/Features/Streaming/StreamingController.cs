@@ -39,12 +39,40 @@ namespace FileService.Features.Streaming
             return Ok(result);
         }
 
-        [HttpGet("{fileId}/play")]
-        public async Task<IActionResult> GetPlaybackUrl(Guid fileId, CancellationToken ct = default)
+        [HttpGet("{fileId}/play/{quality?}")]
+        public async Task<IActionResult> GetPlaybackUrl(
+            Guid fileId,
+            string? quality,
+            CancellationToken ct = default)
         {
             try
             {
-                var query = new GetPlaybackUrlQuery(fileId);
+                var query = new GetPlaybackUrlQuery(fileId, quality);
+                var result = await _mediator.Send(query, ct);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{fileId}/qualities")]
+        public async Task<IActionResult> GetAvailableQualities(
+            Guid fileId,
+            CancellationToken ct = default)
+        {
+            try
+            {
+                var query = new GetAvailableQualitiesQuery(fileId);
                 var result = await _mediator.Send(query, ct);
                 return Ok(result);
             }
